@@ -62,8 +62,26 @@ export const HomeLoan = () => {
 
   const [emiRows, setEmiRows] = useState<IEmiRow[]>([]);
 
+  const emptyRowData: IEmiRow = {
+    currentEmiAmount: 0,
+    currentInterest: 0,
+    extraMoneyPaid: 0,
+    installmentNumber: 0,
+    interestPaidToBank: 0,
+    monthBeginningLoan: 0,
+    outstandingLoan: 0,
+    principalPaidToBank: 0,
+  };
+
   // on input change effect.
   useEffect(() => {
+    const emiRows: IEmiRow[] = [];
+
+    //600 -- 50yrs
+    for (let i = 0; i < 600; i++) {
+      emiRows.push({ ...emptyRowData });
+    }
+
     let calcEmi = emiAmountInp;
     // let calcMonths = tenureInMonthsInp;
 
@@ -90,8 +108,6 @@ export const HomeLoan = () => {
     // From emi amount calculate
 
     if (calcEmi) {
-      const emiRows: IEmiRow[] = [];
-
       let installmentMonth = 0;
       let outstandingLoan = loanTakenInp; // take it from the cell
 
@@ -103,7 +119,7 @@ export const HomeLoan = () => {
           principal = outstandingLoan;
         }
         outstandingLoan = outstandingLoan - principal;
-        emiRows.push({
+        emiRows[installmentMonth] = {
           installmentNumber: installmentMonth,
           monthBeginningLoan: outstandingLoan + principal,
           currentEmiAmount: calcEmi,
@@ -112,11 +128,12 @@ export const HomeLoan = () => {
           principalPaidToBank: principal,
           currentInterest: initialInterestPercentInp,
           outstandingLoan,
-        });
+        };
         installmentMonth++;
       }
       setEmiRows(emiRows);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     emiAmountInp,
     tenureInMonthsInp,
@@ -177,30 +194,39 @@ export const HomeLoan = () => {
     oldEmiRows: IEmiRow[],
     updatedRowIndex: number
   ) {
-    const rowData = oldEmiRows[updatedRowIndex];
-    let installmentMonth = updatedRowIndex;
-    let outstandingLoan = rowData.monthBeginningLoan; // take it from the cell
+    let outstandingLoan = oldEmiRows[updatedRowIndex].monthBeginningLoan; // take it from the cell
 
-    while (outstandingLoan > 0) {
-      const currentMonthInterest = rowData.currentInterest / 100 / 12;
-      const interestAmount = outstandingLoan * currentMonthInterest;
-      let principal = calcEmi - interestAmount;
+    for (let i = updatedRowIndex; i < 600; i++) {
+      const rowData = oldEmiRows[updatedRowIndex];
+      const newEmi = rowData.currentEmiAmount;
+      if (outstandingLoan > 0) {
+        const currentMonthInterest = rowData.currentInterest / 100 / 12;
+        const interestAmount = outstandingLoan * currentMonthInterest;
+        let principal = newEmi - interestAmount;
+        if (principal > outstandingLoan) {
+          principal = outstandingLoan;
+        }
+        outstandingLoan = outstandingLoan - principal;
+        if (rowData.extraMoneyPaid > outstandingLoan) {
+          rowData.extraMoneyPaid = outstandingLoan;
+        }
+        outstandingLoan = outstandingLoan - rowData.extraMoneyPaid;
+        oldEmiRows[i] = {
+          installmentNumber: i,
+          monthBeginningLoan: rowData.monthBeginningLoan,
+          currentEmiAmount: newEmi,
+          extraMoneyPaid: rowData.extraMoneyPaid,
+          interestPaidToBank: interestAmount,
+          principalPaidToBank: principal,
+          currentInterest: rowData.currentInterest,
+          outstandingLoan,
+        };
+      } else {
+        oldEmiRows[i] = { ...emptyRowData };
+      }
     }
 
-    const emptyRowData: IEmiRow = {
-      currentEmiAmount: 0,
-      currentInterest: 0,
-      extraMoneyPaid: 0,
-      installmentNumber: 0,
-      interestPaidToBank: 0,
-      monthBeginningLoan: 0,
-      outstandingLoan: 0,
-      principalPaidToBank: 0,
-    };
-
-    for (let i = installmentMonth; i < oldEmiRows.length; i++) {
-      oldEmiRows[i] = { ...emptyRowData };
-    }
+    setEmiRows(oldEmiRows);
   }
 
   function calculateEMIAmountFromTenure(
@@ -230,9 +256,18 @@ export const HomeLoan = () => {
   //   }
 
   function onChangeAdditionalAmount(month: number, amount: number) {
-    const emiDetail = [...emiRows];
-    emiDetail[month - 1].additionalAmountPaid = amount;
-    setEmiRows(emiDetail);
+    // emiDetail[month - 1].additionalAmountPaid = amount;
+    // setEmiRows(emiDetail);
+    const emiDetail = emiRows?.map((row) => {
+      if (row.installmentNumber >= month) {
+        return {
+          ...row,
+          extraMoneyPaid: amount,
+        };
+      }
+      return { ...row };
+    });
+    updateSubsequentRows(emiDetail, month);
   }
 
   function onChangeInterest(month: number, newInterest: number) {
@@ -245,7 +280,8 @@ export const HomeLoan = () => {
       }
       return { ...row };
     });
-    setEmiRows(emiDetail ?? []);
+    // setEmiRows(emiDetail ?? []);
+    updateSubsequentRows(emiDetail, month);
   }
 
   return (
