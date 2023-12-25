@@ -93,7 +93,12 @@
         value="9"
       />
       <label for="tenure">Tenure (months):</label>
-      <input type="number" id="tenure" placeholder="Enter Tenure (optional)" />
+      <input
+        type="number"
+        id="tenure"
+        placeholder="Enter Tenure (optional)"
+        value="360"
+      />
       <label for="emiAmount">Desired EMI Amount:</label>
       <input
         type="number"
@@ -153,6 +158,12 @@
         return Math.ceil(months);
       }
 
+      function getDate(month) {
+        return `${month} - (${Math.ceil(month / 12)} Year, ${
+          (month % 12) + 1
+        } Month),`;
+      }
+
       function generateTable(loanAmount, interestRate, emiAmount, months) {
         const monthlyInterestRate = interestRate / 100 / 12;
         let remainingLoan = loanAmount;
@@ -179,8 +190,8 @@
           remainingLoan -= principal;
           emiTable.innerHTML += `
           <tr>
-            <td>${month}</td>
-            <td contenteditable="true" id="emi${month}" oninput="updateRows(${month})">${emiAmount}</td>
+            <td>${getDate(month)}</td>
+            <td contenteditable="true" id="emi${month}" oninput="updateRows(${month})" type="number">${emiAmount}</td>
             <td>${Math.ceil(principal)}</td>
             <td>${interest.toFixed(2)}</td>
             <td>${remainingLoan.toFixed(2)}</td>
@@ -190,10 +201,10 @@
       }
 
       function updateRows(startingRow) {
-        let emiAmount = parseFloat(
+        let newEmiAmount = parseFloat(
           document.getElementById(`emi${startingRow}`).innerText
         );
-        let remainingLoan = parseFloat(
+        let remainingLoanByNewEmiAmount = parseFloat(
           document.getElementById(`emiTable`).rows[startingRow].cells[4]
             .innerText
         );
@@ -201,37 +212,49 @@
         const monthlyInterestRate =
           parseFloat(document.getElementById("interestRate").value) / 100 / 12;
 
+        // deletes all the rows from that edited cell
         for (
           let i = startingRow;
           i <= document.getElementById("emiTable").rows.length - 1;
           i++
         ) {
-          const interest = remainingLoan * monthlyInterestRate;
-          let principal = emiAmount - interest;
-
-          if (principal > remainingLoan) {
-            principal = remainingLoan;
-            document.getElementById(`emiTable`).rows[i].cells[1].innerText =
-              emiAmount.toFixed(2);
-            document.getElementById(`emiTable`).rows[i].cells[2].innerText =
-              Math.ceil(principal);
-            document.getElementById(`emiTable`).rows[i].cells[3].innerText =
-              interest.toFixed(2);
-            document.getElementById(`emiTable`).rows[i].cells[4].innerText =
-              "0.00";
-            break;
-          }
-
-          remainingLoan -= principal;
-          document.getElementById(`emiTable`).rows[i].cells[1].innerText =
-            emiAmount.toFixed(2);
-          document.getElementById(`emiTable`).rows[i].cells[2].innerText =
-            Math.ceil(principal);
-          document.getElementById(`emiTable`).rows[i].cells[3].innerText =
-            interest.toFixed(2);
-          document.getElementById(`emiTable`).rows[i].cells[4].innerText =
-            remainingLoan.toFixed(2);
+          document.getElementById(`emiTable`).rows[i].remove();
         }
+
+        const emiTable = document.getElementById("emiTable");
+
+        // for (
+        //   let i = startingRow;
+        //   //   i <= document.getElementById("emiTable").rows.length - 1;
+        //   remainingLoanByNewEmiAmount > 0;
+        //   i++
+        // ) {
+        //   const interest = remainingLoanByNewEmiAmount * monthlyInterestRate;
+        //   let principal = newEmiAmount - interest;
+
+        //   if (principal > remainingLoanByNewEmiAmount) {
+        //     principal = remainingLoanByNewEmiAmount;
+        //     document.getElementById(`emiTable`).rows[i].cells[1].innerText =
+        //       newEmiAmount.toFixed(2);
+        //     document.getElementById(`emiTable`).rows[i].cells[2].innerText =
+        //       Math.ceil(principal);
+        //     document.getElementById(`emiTable`).rows[i].cells[3].innerText =
+        //       interest.toFixed(2);
+        //     document.getElementById(`emiTable`).rows[i].cells[4].innerText =
+        //       "0.00";
+        //     break;
+        //   }
+
+        //   remainingLoanByNewEmiAmount -= principal;
+        //   document.getElementById(`emiTable`).rows[i].cells[1].innerText =
+        //     newEmiAmount.toFixed(2);
+        //   document.getElementById(`emiTable`).rows[i].cells[2].innerText =
+        //     Math.ceil(principal);
+        //   document.getElementById(`emiTable`).rows[i].cells[3].innerText =
+        //     interest.toFixed(2);
+        //   document.getElementById(`emiTable`).rows[i].cells[4].innerText =
+        //     remainingLoanByNewEmiAmount.toFixed(2);
+        // }
       }
     </script>
   </body>
