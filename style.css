@@ -1,0 +1,36 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.calculator {
+  border: 1px solid black;
+  padding: 20px;
+  margin: 0 auto;
+  width: 400px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+}
+
+#emiResult {
+  font-weight: bold;
+  margin-top: 10px;
+}

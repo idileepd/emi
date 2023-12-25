@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>EMI Calculator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .input-container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 12px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+      }
+
+      button {
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .output-container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 8px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Home Loan EMI Calculator</h1>
+    <div class="input-container">
+      <label for="loanAmount">Loan Amount:</label>
+      <input
+        type="number"
+        id="loanAmount"
+        placeholder="Enter Loan Amount"
+        value="6000000"
+      />
+      <label for="interestRate">Interest Rate (%):</label>
+      <input
+        type="number"
+        id="interestRate"
+        placeholder="Enter Interest Rate"
+        value="9"
+      />
+      <label for="tenure">Tenure (months):</label>
+      <input type="number" id="tenure" placeholder="Enter Tenure (optional)" />
+      <label for="emiAmount">Desired EMI Amount:</label>
+      <input
+        type="number"
+        id="emiAmount"
+        placeholder="Enter Desired EMI Amount"
+      />
+      <button onclick="calculateTable()">Generate Table</button>
+    </div>
+    <div class="output-container">
+      <h2>EMI Details</h2>
+      <table id="emiTable">
+        <!-- Table headers remain unchanged -->
+      </table>
+    </div>
+    <script>
+      function calculateTable() {
+        const loanAmount = parseFloat(
+          document.getElementById("loanAmount").value
+        );
+        const interestRate = parseFloat(
+          document.getElementById("interestRate").value
+        );
+        const tenure = document.getElementById("tenure").value;
+
+        let emiAmount = parseFloat(document.getElementById("emiAmount").value);
+        console.log(emiAmount);
+        console.log(tenure);
+        let months;
+        if (tenure) {
+          months = parseInt(tenure);
+          emiAmount = calculateEMI(loanAmount, interestRate, months);
+        } else if (emiAmount) {
+          months = calculateTenure(loanAmount, interestRate, emiAmount);
+        } else {
+          alert("Please provide either Tenure or EMI Amount.");
+          return;
+        }
+
+        generateTable(loanAmount, interestRate, emiAmount, months);
+      }
+
+      function calculateEMI(loanAmount, interestRate, months) {
+        const monthlyInterestRate = interestRate / 100 / 12;
+        const emi =
+          (loanAmount *
+            monthlyInterestRate *
+            Math.pow(1 + monthlyInterestRate, months)) /
+          (Math.pow(1 + monthlyInterestRate, months) - 1);
+        return emi.toFixed(2);
+      }
+
+      function calculateTenure(loanAmount, interestRate, emiAmount) {
+        const monthlyInterestRate = interestRate / 100 / 12;
+        const months =
+          Math.log(emiAmount / (emiAmount - loanAmount * monthlyInterestRate)) /
+          Math.log(1 + monthlyInterestRate);
+        return Math.ceil(months);
+      }
+
+      function generateTable(loanAmount, interestRate, emiAmount, months) {
+        const monthlyInterestRate = interestRate / 100 / 12;
+        let remainingLoan = loanAmount;
+
+        const emiTable = document.getElementById("emiTable");
+        emiTable.innerHTML = `
+        <tr>
+          <th>Month</th>
+          <th>EMI Amount</th>
+          <th>Principal</th>
+          <th>Interest</th>
+          <th>Remaining Loan</th>
+        </tr>
+      `;
+
+        for (let month = 1; month <= months; month++) {
+          const interest = remainingLoan * monthlyInterestRate;
+          let principal = emiAmount - interest;
+
+          if (principal > remainingLoan) {
+            principal = remainingLoan;
+          }
+
+          remainingLoan -= principal;
+          emiTable.innerHTML += `
+          <tr>
+            <td>${month}</td>
+            <td contenteditable="true" id="emi${month}" oninput="updateRows(${month})">${emiAmount}</td>
+            <td>${Math.ceil(principal)}</td>
+            <td>${interest.toFixed(2)}</td>
+            <td>${remainingLoan.toFixed(2)}</td>
+          </tr>
+        `;
+        }
+      }
+
+      function updateRows(startingRow) {
+        let emiAmount = parseFloat(
+          document.getElementById(`emi${startingRow}`).innerText
+        );
+        let remainingLoan = parseFloat(
+          document.getElementById(`emiTable`).rows[startingRow].cells[4]
+            .innerText
+        );
+
+        const monthlyInterestRate =
+          parseFloat(document.getElementById("interestRate").value) / 100 / 12;
+
+        for (
+          let i = startingRow;
+          i <= document.getElementById("emiTable").rows.length - 1;
+          i++
+        ) {
+          const interest = remainingLoan * monthlyInterestRate;
+          let principal = emiAmount - interest;
+
+          if (principal > remainingLoan) {
+            principal = remainingLoan;
+            document.getElementById(`emiTable`).rows[i].cells[1].innerText =
+              emiAmount.toFixed(2);
+            document.getElementById(`emiTable`).rows[i].cells[2].innerText =
+              Math.ceil(principal);
+            document.getElementById(`emiTable`).rows[i].cells[3].innerText =
+              interest.toFixed(2);
+            document.getElementById(`emiTable`).rows[i].cells[4].innerText =
+              "0.00";
+            break;
+          }
+
+          remainingLoan -= principal;
+          document.getElementById(`emiTable`).rows[i].cells[1].innerText =
+            emiAmount.toFixed(2);
+          document.getElementById(`emiTable`).rows[i].cells[2].innerText =
+            Math.ceil(principal);
+          document.getElementById(`emiTable`).rows[i].cells[3].innerText =
+            interest.toFixed(2);
+          document.getElementById(`emiTable`).rows[i].cells[4].innerText =
+            remainingLoan.toFixed(2);
+        }
+      }
+    </script>
+  </body>
+</html>
